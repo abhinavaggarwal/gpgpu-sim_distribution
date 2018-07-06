@@ -28,6 +28,8 @@
 #ifndef ABSTRACT_HARDWARE_MODEL_INCLUDED
 #define ABSTRACT_HARDWARE_MODEL_INCLUDED
 
+#include <queue>
+
 // Forward declarations
 class gpgpu_sim;
 class kernel_info_t;
@@ -550,11 +552,13 @@ public:
       return false;
    }
    enum _memory_space_t get_type() const { return m_type; }
+   void set_type(enum _memory_space_t type) { m_type = type; }
    unsigned get_bank() const { return m_bank; }
    void set_bank( unsigned b ) { m_bank = b; }
    bool is_const() const { return (m_type == const_space) || (m_type == param_space_kernel); }
    bool is_local() const { return (m_type == local_space) || (m_type == param_space_local); }
    bool is_global() const { return (m_type == global_space); }
+   bool is_shared() const { return (m_type == shared_space); }
 
 private:
    enum _memory_space_t m_type;
@@ -578,7 +582,7 @@ MA_TUP_BEGIN( mem_access_type ) \
    MA_TUP( INST_ACC_R ), \
    MA_TUP( L1_WR_ALLOC_R ), \
    MA_TUP( L2_WR_ALLOC_R ), \
-   MA_TUP( NUM_MEM_ACCESS_TYPE ) \
+   MA_TUP( NUM_MEM_ACCESS_TYPE ), \
 MA_TUP_END( mem_access_type ) 
 
 #define MA_TUP_BEGIN(X) enum X {
@@ -611,23 +615,32 @@ enum cache_operator_type {
 class mem_access_t {
 public:
    mem_access_t() { init(); }
+   mem_access_t( mem_access_type type, const active_mask_t &active_mask) 
+	   : m_warp_mask(active_mask) 
+   { 
+
+	   init();
+	   m_type = type;
+   }
    mem_access_t( mem_access_type type, 
                  new_addr_type address, 
                  unsigned size,
-                 bool wr )
+                 bool wr, bool is_prefetch = false, int stream_number = 0)
    {
        init();
        m_type = type;
        m_addr = address;
        m_req_size = size;
        m_write = wr;
+       this->is_prefetch = is_prefetch;
+       this->stream_number = stream_number;
    }
    mem_access_t( mem_access_type type, 
                  new_addr_type address, 
                  unsigned size, 
                  bool wr, 
                  const active_mask_t &active_mask,
-                 const mem_access_byte_mask_t &byte_mask )
+                 const mem_access_byte_mask_t &byte_mask, bool is_prefetch = false, int stream_number = 0)
     : m_warp_mask(active_mask), m_byte_mask(byte_mask)
    {
       init();
@@ -635,6 +648,8 @@ public:
       m_addr = address;
       m_req_size = size;
       m_write = wr;
+      this->is_prefetch = is_prefetch;
+      this->stream_number = stream_number;
    }
 
    new_addr_type get_addr() const { return m_addr; }
@@ -662,12 +677,17 @@ public:
        }
    }
 
+   public: 	
+   bool is_prefetch;
+   int stream_number;
+
 private:
    void init() 
    {
       m_uid=++sm_next_access_uid;
       m_addr=0;
       m_req_size=0;
+      is_prefetch = false;
    }
 
    unsigned      m_uid;
@@ -807,12 +827,16 @@ public:
     // constructors
     warp_inst_t() 
     {
+	prefetch_address = 0;
+	is_prefetch = false;
         m_uid=0;
         m_empty=true; 
         m_config=NULL; 
     }
     warp_inst_t( const core_config *config ) 
     { 
+	prefetch_address = 0;
+	is_prefetch = false;
         m_uid=0;
         assert(config->warp_size<=MAX_WARP_SIZE); 
         m_config=config;
@@ -834,7 +858,7 @@ public:
     { 
         m_empty=true; 
     }
-    void issue( const active_mask_t &mask, unsigned warp_id, unsigned long long cycle, int dynamic_warp_id ) 
+    void issue( const active_mask_t &mask, unsigned warp_id, unsigned long long cycle, int dynamic_warp_id, class shader_core_ctx *core) 
     {
         m_warp_active_mask = mask;
         m_warp_issued_mask = mask; 
@@ -845,6 +869,7 @@ public:
         cycles = initiation_interval;
         m_cache_hit=false;
         m_empty=false;
+	m_shader = core;
     }
     const active_mask_t & get_active_mask() const
     {
@@ -884,6 +909,7 @@ public:
         }
     };
 
+    void generate_prefetch_accesses();
     void generate_mem_accesses();
     void memory_coalescing_arch_13( bool is_write, mem_access_type access_type );
     void memory_coalescing_arch_13_atomic( bool is_write, mem_access_type access_type );
@@ -947,9 +973,10 @@ public:
 
     bool accessq_empty() const { return m_accessq.empty(); }
     unsigned accessq_count() const { return m_accessq.size(); }
-    const mem_access_t &accessq_back() { return m_accessq.back(); }
-    void accessq_pop_back() { m_accessq.pop_back(); }
-
+    // TODO: Change back to front in the function name
+    const mem_access_t &accessq_back() { return m_accessq.front(); }
+    void accessq_pop_back() { m_accessq.pop_front(); }
+    
     bool dispatch_delay()
     { 
         if( cycles > 0 ) 
@@ -963,8 +990,7 @@ public:
 
     void print( FILE *fout ) const;
     unsigned get_uid() const { return m_uid; }
-
-
+	
 protected:
 
     unsigned m_uid;
@@ -994,6 +1020,12 @@ protected:
     std::list<mem_access_t> m_accessq;
 
     static unsigned sm_next_uid;
+
+    // To be able to access the stream_buffer associated with the corresponding SIMT core
+    public:
+    class shader_core_ctx *m_shader;
+    addr_t prefetch_address;
+    bool is_prefetch;
 };
 
 void move_warp( warp_inst_t *&dst, warp_inst_t *&src );

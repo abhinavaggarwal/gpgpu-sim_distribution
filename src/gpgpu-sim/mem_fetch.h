@@ -49,7 +49,7 @@ enum mf_type {
 
 class mem_fetch {
 public:
-    mem_fetch( const mem_access_t &access, 
+    mem_fetch( const mem_access_t access, 
                const warp_inst_t *inst,
                unsigned ctrl_size, 
                unsigned wid,
@@ -111,6 +111,9 @@ public:
    const memory_config *get_mem_config(){return m_mem_config;}
 
    unsigned get_num_flits(bool simt_to_mem);
+   bool is_prefetch;
+   int stream_number;
+
 private:
    // request source information
    unsigned m_request_uid;
