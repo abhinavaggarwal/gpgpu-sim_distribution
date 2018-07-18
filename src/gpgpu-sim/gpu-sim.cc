@@ -61,6 +61,7 @@
 #include "power_stat.h"
 #include "visualizer.h"
 #include "stats.h"
+#include "../cuda-sim/ptx_ir.h"
 
 #ifdef GPGPUSIM_POWER_MODEL
 #include "power_interface.h"
@@ -1050,6 +1051,17 @@ void shader_core_ctx::mem_instruction_stats(const warp_inst_t &inst)
 
 void shader_core_ctx::issue_block2core( kernel_info_t &kernel ) 
 {
+    // Setup the stream buffer paramters
+    function_info *finfo = kernel.entry();
+    unsigned n_streams = finfo->get_num_streams();
+    prefetch_unit_func->set_n_stream_buffers(n_streams);
+    m_ldst_unit->prefetch_unit_time->set_n_stream_buffers(n_streams);
+    for (unsigned i = 1 ; i <= n_streams ; i++) {
+	addr_t addr = finfo->get_param_value(i);
+	prefetch_unit_func->set_prefetch_address(i-1, addr);
+	m_ldst_unit->prefetch_unit_time->set_prefetch_address(i-1, addr);
+    }
+
     set_max_cta(kernel);
 
     // find a free CTA context 
@@ -1176,9 +1188,13 @@ void gpgpu_sim::cycle()
                     ::icnt_push( m_shader_config->mem2device(i), mf->get_tpc(), mf, response_size );
                     m_memory_sub_partition[i]->pop();
                 } else {
+                    // Logging
+                    // printf("dram-icnt stall %u, %llu\n", i, gpu_sim_cycle + gpu_tot_sim_cycle);
                     gpu_stall_icnt2sh++;
                 }
             } else {
+               // Logging
+               // printf("No data from dram to icnt %u, %llu\n", i, gpu_sim_cycle + gpu_tot_sim_cycle);
                m_memory_sub_partition[i]->pop();
             }
         }
@@ -1202,6 +1218,8 @@ void gpgpu_sim::cycle()
           //Note:This needs to be called in DRAM clock domain if there is no L2 cache in the system
           if ( m_memory_sub_partition[i]->full() ) {
              gpu_stall_dramfull++;
+             // Logging
+             // printf("icnt-l2-queue full\n");
           } else {
               mem_fetch* mf = (mem_fetch*) icnt_pop( m_shader_config->mem2device(i) );
               m_memory_sub_partition[i]->push( mf, gpu_sim_cycle + gpu_tot_sim_cycle );

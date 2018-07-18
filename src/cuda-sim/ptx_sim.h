@@ -315,6 +315,7 @@ public:
    memory_space_t last_space() const { return m_last_memory_space;}
    dram_callback_t last_callback() const { return m_last_dram_callback;}
    unsigned long long get_cta_uid() { return m_cta_info->get_sm_idx();}
+   unsigned get_last_stream_number() { return m_last_stream_number; }
 
    void set_single_thread_single_block()
    {
@@ -427,6 +428,7 @@ public:
    memory_space   *m_local_mem;
    ptx_cta_info   *m_cta_info;
    ptx_reg_t m_last_set_operand_value;
+   unsigned m_last_stream_number;
 
 private:
 

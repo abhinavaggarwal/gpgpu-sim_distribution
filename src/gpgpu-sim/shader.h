@@ -1078,27 +1078,32 @@ class cache_t;
 
 class prefetch_unit_timing {
 	public:
-		prefetch_unit_timing(unsigned n_stream_buffers, unsigned stream_buffer_max_size, unsigned data_size, unsigned max_in_flight_requests_percentage) :
-			n_stream_buffers(n_stream_buffers),
+		prefetch_unit_timing(unsigned n_max_stream_buffers, unsigned stream_buffer_max_size, unsigned data_size, unsigned max_in_flight_requests_percentage) :
+			n_max_stream_buffers(n_max_stream_buffers),
+			n_stream_buffers(n_max_stream_buffers),
 			stream_buffer_max_size(stream_buffer_max_size),
 			data_size(data_size),
 			max_in_flight_requests_percentage(max_in_flight_requests_percentage),
-			received_responses(n_stream_buffers),
-			prefetch_address(n_stream_buffers) {
+			received_responses(n_max_stream_buffers),
+			prefetch_address(n_max_stream_buffers) {
 				max_in_flight_requests = (max_in_flight_requests_percentage / 100.0) * stream_buffer_max_size;
 				in_flight_requests = 0;
 			}
 
 		~prefetch_unit_timing() {}
 
-		bool read(int stream_number, addr_t addr); // true: success, false: stall
-		void receive_response(int stream_number, addr_t resp);
-		size_t get_buffer_size(int stream_number);
-		addr_t get_prefetch_address(int stream_number);
-		void inc_prefetch_address(int stream_number);
-		void set_prefetch_address(int stream_number, addr_t addr);
-		bool can_issue(int stream_number);
+		bool read(unsigned stream_number, addr_t addr); // true: success, false: stall
+		void receive_response(unsigned stream_number, addr_t resp);
+		size_t get_buffer_size(unsigned stream_number);
+		addr_t get_prefetch_address(unsigned stream_number);
+		void inc_prefetch_address(unsigned stream_number);
+		void set_prefetch_address(unsigned stream_number, addr_t addr);
+		bool can_issue(unsigned stream_number);
+		unsigned get_n_stream_buffers();
+		void set_n_stream_buffers(unsigned n_buffers);
 
+
+		unsigned n_max_stream_buffers;
 		unsigned n_stream_buffers;
 		unsigned stream_buffer_max_size;
 		unsigned data_size;
@@ -1225,6 +1230,8 @@ class ldst_unit: public pipelined_simd_unit {
 		// for debugging
 		unsigned long long m_last_inst_gpu_sim_cycle;
 		unsigned long long m_last_inst_gpu_tot_sim_cycle;
+
+		unsigned last_stream_served;
 
 	public:
 		prefetch_unit_timing *prefetch_unit_time;
@@ -1584,7 +1591,7 @@ class shader_core_mem_fetch_allocator : public mem_fetch_allocator {
 			return mf;
 		}
 
-		mem_fetch *alloc( new_addr_type addr, mem_access_type type, unsigned size, bool wr, int stream_number = 0, bool is_prefetch = false) const 
+		mem_fetch *alloc( new_addr_type addr, mem_access_type type, unsigned size, bool wr, unsigned stream_number = 0, bool is_prefetch = false) const 
 		{
 			mem_access_t access( type, addr, size, wr, is_prefetch, stream_number);
 			mem_fetch *mf = new mem_fetch( access, 
@@ -1617,23 +1624,24 @@ class shader_core_mem_fetch_allocator : public mem_fetch_allocator {
 
 class prefetch_unit_functional {
 	public:
-		prefetch_unit_functional(addr_t prefetch_address, unsigned n_stream_buffers,
+		prefetch_unit_functional(unsigned n_max_stream_buffers,
 				unsigned data_size) :
 			data_size(data_size),
-			n_stream_buffers(n_stream_buffers),
-			prefetch_address(n_stream_buffers) {
-				for (unsigned i = 0 ; i < n_stream_buffers ; i++) {
-					this->prefetch_address[i] = prefetch_address;
-				}
-			}
+			n_max_stream_buffers(n_max_stream_buffers),
+			n_stream_buffers(n_max_stream_buffers),
+			prefetch_address(n_max_stream_buffers) {}
 
 		~prefetch_unit_functional() {}
 
-		addr_t get_prefetch_address(int stream_number);
-		void inc_prefetch_address(int stream_number);
+		addr_t get_prefetch_address(unsigned stream_number);
+		void set_prefetch_address(unsigned stream_number, addr_t addr);
+		void inc_prefetch_address(unsigned stream_number);
+		void set_n_stream_buffers(unsigned n_buffers);
+		unsigned get_n_stream_buffers();
 
 		unsigned data_size; // in bytes                                                    
 	private:
+		unsigned n_max_stream_buffers;
 		unsigned n_stream_buffers;
 		std::vector<addr_t> prefetch_address;
 };      

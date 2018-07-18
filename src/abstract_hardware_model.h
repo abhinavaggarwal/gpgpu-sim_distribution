@@ -625,7 +625,7 @@ public:
    mem_access_t( mem_access_type type, 
                  new_addr_type address, 
                  unsigned size,
-                 bool wr, bool is_prefetch = false, int stream_number = 0)
+                 bool wr, bool is_prefetch = false, unsigned stream_number = 0)
    {
        init();
        m_type = type;
@@ -640,7 +640,7 @@ public:
                  unsigned size, 
                  bool wr, 
                  const active_mask_t &active_mask,
-                 const mem_access_byte_mask_t &byte_mask, bool is_prefetch = false, int stream_number = 0)
+                 const mem_access_byte_mask_t &byte_mask, bool is_prefetch = false, unsigned stream_number = 0)
     : m_warp_mask(active_mask), m_byte_mask(byte_mask)
    {
       init();
@@ -679,7 +679,7 @@ public:
 
    public: 	
    bool is_prefetch;
-   int stream_number;
+   unsigned stream_number;
 
 private:
    void init() 
@@ -829,6 +829,7 @@ public:
     {
 	prefetch_address = 0;
 	is_prefetch = false;
+	stream_number = 0;
         m_uid=0;
         m_empty=true; 
         m_config=NULL; 
@@ -837,6 +838,7 @@ public:
     { 
 	prefetch_address = 0;
 	is_prefetch = false;
+	stream_number = 0;
         m_uid=0;
         assert(config->warp_size<=MAX_WARP_SIZE); 
         m_config=config;
@@ -877,6 +879,9 @@ public:
     }
     void completed( unsigned long long cycle ) const;  // stat collection: called when the instruction is completed  
 
+    void set_stream_number(unsigned n, new_addr_type addr) {
+	m_per_scalar_thread[n].stream_number = addr;
+    }
     void set_addr( unsigned n, new_addr_type addr ) 
     {
         if( !m_per_scalar_thread_valid ) {
@@ -1010,9 +1015,11 @@ protected:
         per_thread_info() {
             for(unsigned i=0; i<MAX_ACCESSES_PER_INSN_PER_THREAD; i++)
                 memreqaddr[i] = 0;
+	    stream_number = 0;
         }
         dram_callback_t callback;
         new_addr_type memreqaddr[MAX_ACCESSES_PER_INSN_PER_THREAD]; // effective address, upto 8 different requests (to support 32B access in 8 chunks of 4B each)
+	unsigned stream_number;
     };
     bool m_per_scalar_thread_valid;
     std::vector<per_thread_info> m_per_scalar_thread;
@@ -1026,6 +1033,7 @@ protected:
     class shader_core_ctx *m_shader;
     addr_t prefetch_address;
     bool is_prefetch;
+    unsigned stream_number;
 };
 
 void move_warp( warp_inst_t *&dst, warp_inst_t *&src );

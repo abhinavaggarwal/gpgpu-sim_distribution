@@ -29,6 +29,7 @@
 #include "ptx_ir.h"
 #include "ptx.tab.h"
 #include <stdarg.h>
+#include <iostream>
 
 extern int ptx_error( const char *s );
 extern int ptx_lineno;
@@ -510,6 +511,8 @@ void add_identifier( const char *identifier, int array_dim, unsigned array_ident
    if ( ti.is_param_kernel() ) {
       bool is_ptr = (g_ptr_spec != undefined_space); 
       g_func_info->add_param_name_type_size(g_entry_func_param_index,identifier, ti.scalar_type(), num_bits, is_ptr, g_ptr_spec);
+      // Logging
+      // std::cout << "Adding kernel parameter: " << identifier << std::endl;
       g_entry_func_param_index++;
    }
 }

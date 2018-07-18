@@ -179,30 +179,38 @@ void warp_inst_t::broadcast_barrier_reduction(const active_mask_t& access_mask)
 }
 
 void warp_inst_t::generate_prefetch_accesses() {
-	bool is_write = false;
-	unsigned segment_size = 0;
-	switch( data_size ) {
-		case 1: segment_size = 32; break;
-		case 2: segment_size = 64; break;
-		case 4: case 8: case 16: segment_size = 128; break;
-	}
-	active_mask_t mask;
 	for (unsigned t = 0 ; t < m_config->warp_size ; t++) {
-		if (active(t))
-			mask.set(t);
-	}	
-	mem_access_byte_mask_t bmask;
-	int stream_number = 0;
-	// Generate the read request for head of stream
-	mem_access_type access_type = GLOBAL_ACC_R;
-	bool is_prefetch = false;
-	m_accessq.push_back(mem_access_t(access_type, prefetch_address, segment_size, is_write, mask, bmask, is_prefetch, stream_number));
+		if (!active(t)) {
+			continue;
+		}
+		bool is_write = false;
+		unsigned segment_size = 0;
+		switch( data_size ) {
+			case 1: segment_size = 32; break;
+			case 2: segment_size = 64; break;
+			case 4: case 8: case 16: segment_size = 128; break;
+		}
+		active_mask_t mask;
+		//for (unsigned t = 0 ; t < m_config->warp_size ; t++) {
+		//	if (active(t))
+		//		mask.set(t);
+		//}
+		mask.set(t);	
+		mem_access_byte_mask_t bmask;
+		unsigned stream_number = m_per_scalar_thread[t].stream_number;
+                // Logging
+		// printf("Generating prefetch access for stream number : %u for address %llu\n", stream_number, m_per_scalar_thread[t].memreqaddr[0]);
+		// Generate the read request for head of stream
+		mem_access_type access_type = GLOBAL_ACC_R;
+		bool is_prefetch = false;
+		m_accessq.push_back(mem_access_t(access_type, m_per_scalar_thread[t].memreqaddr[0], segment_size, is_write, mask, bmask, is_prefetch, stream_number));
+	}
+	m_mem_accesses_created = true;
 }
 
 void warp_inst_t::generate_mem_accesses()
 {
 	if (is_prefetch) {
-		assert(space.get_type() == global_space);
 		generate_prefetch_accesses();
 		return;
 	}

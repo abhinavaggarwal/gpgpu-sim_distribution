@@ -2294,9 +2294,8 @@ void decode_space( memory_space_t &space, ptx_thread_info *thread, const operand
 	}
 }
 
-void stream_prefetch_impl(warp_inst_t &wI, const ptx_instruction *pI, ptx_thread_info *thread) {
+void stream_prefetch_impl(warp_inst_t &wI, ptx_instruction *pI, ptx_thread_info *thread) {
 	prefetch_unit_functional *prefetcher = wI.m_shader->prefetch_unit_func;
-        int stream_number = 0;	
 
 	const operand_info &dst = pI->dst();
 	const operand_info &src1 = pI->src1();
@@ -2305,13 +2304,17 @@ void stream_prefetch_impl(warp_inst_t &wI, const ptx_instruction *pI, ptx_thread
 
 	ptx_reg_t src1_data = thread->get_operand_value(src1, dst, type, thread, 1);
 	memory_space_t space = pI->get_space();
-	assert(space.get_type() == shared_space);
-	// Change the memory access from shared space to global space
+	// assert(space.get_type() == shared_space); No longer true because of next to next statement 
 	space.set_type(global_space);
-
+	pI->set_space_type(global_space);
+	
 	memory_space *mem = NULL;
 	addr_t addr = src1_data.u32;
-
+	
+	unsigned stream_number = addr/4;
+        // Logging
+	// printf("Stream number : %u\n", stream_number);
+	
 	decode_space(space,thread,src1,mem,addr);
 
 	size_t size;
@@ -2320,6 +2323,7 @@ void stream_prefetch_impl(warp_inst_t &wI, const ptx_instruction *pI, ptx_thread
 	
 	{
 		wI.is_prefetch = true;
+		wI.space.set_type(global_space);
 		wI.prefetch_address = prefetcher->get_prefetch_address(stream_number);
 		prefetcher->inc_prefetch_address(stream_number);
 		ptx_reg_t data;
@@ -2329,9 +2333,9 @@ void stream_prefetch_impl(warp_inst_t &wI, const ptx_instruction *pI, ptx_thread
 			sign_extend(data, size, dst);
 		thread->set_operand_value(dst, data, type, thread, pI);
 	}
-	
-	thread->m_last_effective_address = addr;
+	thread->m_last_effective_address = wI.prefetch_address;
 	thread->m_last_memory_space = space; 
+	thread->m_last_stream_number = stream_number;
 }
 
 void ld_exec( const ptx_instruction *pI, ptx_thread_info *thread ) 

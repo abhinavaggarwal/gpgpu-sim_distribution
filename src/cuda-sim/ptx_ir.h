@@ -771,7 +771,6 @@ private:
    int m_operand_lohi;
    int m_double_operand_type;
    bool m_operand_neg;
-   addr_t m_const_mem_offset;
    union {
       int             m_int;
       unsigned int    m_unsigned;
@@ -785,6 +784,8 @@ private:
       const symbol**  m_vector_symbolic;
    } m_value;
 
+   addr_t m_const_mem_offset;
+   
    int m_addr_offset;
 
    bool m_neg_pred;
@@ -943,7 +944,10 @@ public:
       return m_return_var.is_valid();
    }
 
-   memory_space_t get_space() const { return m_space_spec;}
+   memory_space_t get_space() const { return m_space_spec; }
+   void set_space_type(enum _memory_space_t type) {
+	m_space_spec.set_type(type);
+   }
    unsigned get_vector() const { return m_vector_spec;}
    unsigned get_atomic() const { return m_atomic_spec;}
 
@@ -1114,6 +1118,23 @@ private:
 class function_info {
 public:
    function_info(int entry_point );
+
+   unsigned get_num_streams() {
+	assert(!m_ptx_kernel_param_info.empty());
+	param_info &p = m_ptx_kernel_param_info.begin()->second;
+	return *(unsigned *)(p.get_value().pdata);
+   }
+
+   addr_t get_param_value(unsigned i) {
+	assert(i < m_ptx_kernel_param_info.size());
+	std::map<unsigned, param_info>::iterator it = m_ptx_kernel_param_info.begin();
+	while (i--) {
+		it++;
+	}
+	param_info &p = it->second;
+	return *(addr_t *)(p.get_value().pdata);
+   } 
+
    const ptx_version &get_ptx_version() const { return m_symtab->get_ptx_version(); }
    unsigned get_sm_target() const { return m_symtab->get_sm_target(); }
    bool is_extern() const { return m_extern; }
@@ -1213,7 +1234,7 @@ public:
    {
       return m_return_var_sym;
    }
-   const ptx_instruction *get_instruction( unsigned PC ) const
+   ptx_instruction *get_instruction( unsigned PC ) const
    {
       unsigned index = PC - m_start_PC;
       if( index < m_instr_mem_size ) 

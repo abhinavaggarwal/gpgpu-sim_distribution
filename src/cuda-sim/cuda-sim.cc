@@ -1189,12 +1189,12 @@ static unsigned get_tex_datasize( const ptx_instruction *pI, ptx_thread_info *th
 
 void ptx_thread_info::ptx_exec_inst( warp_inst_t &inst, unsigned lane_id)
 {
-	bool is_prefetch = inst.space.is_shared();	
+	bool is_prefetch = inst.space.is_shared() || inst.is_prefetch;	
 	bool skip = false;
 	int op_classification = 0;
 	addr_t pc = next_instr();
 	assert( pc == inst.pc ); // make sure timing model and functional model are in sync
-	const ptx_instruction *pI = m_func_info->get_instruction(pc);
+	ptx_instruction *pI = m_func_info->get_instruction(pc);
 	set_npc( pc + pI->inst_size() );
 
 	try {
@@ -1230,7 +1230,7 @@ void ptx_thread_info::ptx_exec_inst( warp_inst_t &inst, unsigned lane_id)
 		if( skip ) {
 			inst.set_not_active(lane_id);
 		} else {
-			const ptx_instruction *pI_saved = pI;
+			ptx_instruction *pI_saved = pI;
 			ptx_instruction *pJ = NULL;
 			if( pI->get_opcode() == VOTE_OP ) {
 				pJ = new ptx_instruction(*pI);
@@ -1368,7 +1368,9 @@ void ptx_thread_info::ptx_exec_inst( warp_inst_t &inst, unsigned lane_id)
 		// "Return values"
 		if(!skip) {
 			inst.space = insn_space;
+			// set_stream_number should be called after the set_addr because set_addr takes care of bootstrapping the struct on first call
 			inst.set_addr(lane_id, insn_memaddr);
+			inst.set_stream_number(lane_id, get_last_stream_number());
 			inst.data_size = insn_data_size; // simpleAtomicIntrinsics
 			assert( inst.memory_op == insn_memory_op );
 		} 

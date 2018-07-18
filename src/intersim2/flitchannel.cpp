@@ -78,10 +78,18 @@ void FlitChannel::ReadInputs() {
 	       << " with delay " << _delay
 	       << "." << endl;
   }
+  // Logging
+  // if (!_input) {
+  //    printf("No input: can't push to wait_queue\n");
+  // }
   Channel<Flit>::ReadInputs();
 }
 
 void FlitChannel::WriteOutputs() {
+  if (_wait_queue.empty()) {
+      // Logging
+      // printf("Wait Queue empty\n");
+  }
   Channel<Flit>::WriteOutputs();
   if(_output && _output->watch) {
     *gWatchOut << GetSimTime() << " | " << FullName() << " | "
