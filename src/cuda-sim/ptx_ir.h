@@ -1119,7 +1119,7 @@ class function_info {
 public:
    function_info(int entry_point );
 
-   unsigned get_num_streams() {
+   unsigned get_num_read_streams() {
 	assert(!m_ptx_kernel_param_info.empty());
 	param_info &p = m_ptx_kernel_param_info.begin()->second;
 	return *(unsigned *)(p.get_value().pdata);
@@ -1133,8 +1133,15 @@ public:
 	}
 	param_info &p = it->second;
 	return *(addr_t *)(p.get_value().pdata);
-   } 
+   }
 
+   unsigned get_num_write_streams() {
+	assert(!m_ptx_kernel_param_info.empty());
+	param_info &p = m_ptx_kernel_param_info.begin()->second;
+	unsigned i = *(unsigned *)(p.get_value().pdata) + 1;
+	return get_param_value(i);
+   } 
+	
    const ptx_version &get_ptx_version() const { return m_symtab->get_ptx_version(); }
    unsigned get_sm_target() const { return m_symtab->get_sm_target(); }
    bool is_extern() const { return m_extern; }

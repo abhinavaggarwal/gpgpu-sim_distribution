@@ -64,7 +64,7 @@
 /* READ_PACKET_SIZE:
 bytes: 6 address (flit can specify chanel so this gives up to ~2GB/channel, so good for now),
 2 bytes   [shaderid + mshrid](14 bits) + req_size(0-2 bits if req_size variable) - so up to 2^14 = 16384 mshr total 
-*/
+ */
 
 #define READ_PACKET_SIZE 8
 
@@ -1011,7 +1011,7 @@ class pipelined_simd_unit : public simd_function_unit {
 		//source_reg.move_out_to(m_dispatch_reg);
 		simd_function_unit::issue(source_reg);
 		}
-		*/
+		 */
 		// accessors
 		virtual bool stallable() const { return false; }
 		virtual bool can_issue( const warp_inst_t &inst ) const
@@ -1080,11 +1080,10 @@ class prefetch_unit_timing {
 	public:
 		prefetch_unit_timing(unsigned n_max_stream_buffers, unsigned stream_buffer_max_size, unsigned data_size, unsigned max_in_flight_requests_percentage) :
 			n_max_stream_buffers(n_max_stream_buffers),
-			n_stream_buffers(n_max_stream_buffers),
+			n_stream_buffers(0),
 			stream_buffer_max_size(stream_buffer_max_size),
 			data_size(data_size),
 			max_in_flight_requests_percentage(max_in_flight_requests_percentage),
-			received_responses(n_max_stream_buffers),
 			prefetch_address(n_max_stream_buffers) {
 				max_in_flight_requests = (max_in_flight_requests_percentage / 100.0) * stream_buffer_max_size;
 				in_flight_requests = 0;
@@ -1092,13 +1091,9 @@ class prefetch_unit_timing {
 
 		~prefetch_unit_timing() {}
 
-		bool read(unsigned stream_number, addr_t addr); // true: success, false: stall
-		void receive_response(unsigned stream_number, addr_t resp);
-		size_t get_buffer_size(unsigned stream_number);
 		addr_t get_prefetch_address(unsigned stream_number);
 		void inc_prefetch_address(unsigned stream_number);
 		void set_prefetch_address(unsigned stream_number, addr_t addr);
-		bool can_issue(unsigned stream_number);
 		unsigned get_n_stream_buffers();
 		void set_n_stream_buffers(unsigned n_buffers);
 
@@ -1111,9 +1106,34 @@ class prefetch_unit_timing {
 		unsigned max_in_flight_requests;
 		unsigned in_flight_requests;
 
+	protected:
+		std::vector<addr_t> prefetch_address;
+};
+
+class prefetch_unit_read_timing : public prefetch_unit_timing {
+	public: 
+		prefetch_unit_read_timing(unsigned n_max_stream_buffers, unsigned stream_buffer_max_size, unsigned data_size, unsigned max_in_flight_requests_percentage) :
+			prefetch_unit_timing(n_max_stream_buffers, stream_buffer_max_size, data_size, max_in_flight_requests_percentage),
+			received_responses(n_max_stream_buffers) {}
+		bool read(unsigned stream_number, addr_t addr); // true: success, false: stall
+		void receive_response(unsigned stream_number, addr_t resp);
+		size_t get_buffer_size(unsigned stream_number);
+		bool can_issue(unsigned stream_number);
 	private:
 		std::vector<std::set<addr_t>> received_responses;
-		std::vector<addr_t> prefetch_address;
+};
+
+class prefetch_unit_write_timing : public prefetch_unit_timing {
+	public: 
+		prefetch_unit_write_timing(unsigned n_max_stream_buffers, unsigned stream_buffer_max_size, unsigned data_size, unsigned max_in_flight_requests_percentage, unsigned batch_size) :
+			prefetch_unit_timing(n_max_stream_buffers, stream_buffer_max_size, data_size, max_in_flight_requests_percentage),
+			ejection_buffer(n_max_stream_buffers),
+			batch_size(batch_size),
+			write_buffer(n_max_stream_buffers) {}
+		bool accept_write_request(unsigned stream_number, unsigned warp_id); // true: success, false: stall
+		std::vector<std::queue<std::pair<addr_t, unsigned>>> ejection_buffer;
+		unsigned batch_size;
+		std::vector<std::queue<std::pair<addr_t, unsigned>>> write_buffer;
 };
 
 class ldst_unit: public pipelined_simd_unit {
@@ -1190,8 +1210,8 @@ class ldst_unit: public pipelined_simd_unit {
 		bool constant_cycle( warp_inst_t &inst, mem_stage_stall_type &rc_fail, mem_stage_access_type &fail_type);
 		bool texture_cycle( warp_inst_t &inst, mem_stage_stall_type &rc_fail, mem_stage_access_type &fail_type);
 		bool memory_cycle( warp_inst_t &inst, mem_stage_stall_type &rc_fail, mem_stage_access_type &fail_type);
-		
-		
+
+
 		bool push_to_icnt(mem_fetch *mf);
 
 		virtual mem_stage_stall_type process_cache_access( cache_t* cache,
@@ -1231,10 +1251,12 @@ class ldst_unit: public pipelined_simd_unit {
 		unsigned long long m_last_inst_gpu_sim_cycle;
 		unsigned long long m_last_inst_gpu_tot_sim_cycle;
 
-		unsigned last_stream_served;
+		unsigned last_read_stream_served;
+		unsigned last_write_stream_served;
 
 	public:
-		prefetch_unit_timing *prefetch_unit_time;
+		prefetch_unit_read_timing *prefetch_unit_read_time;
+		prefetch_unit_write_timing *prefetch_unit_write_time;
 };
 
 enum pipeline_stage_name_t {
@@ -1591,13 +1613,13 @@ class shader_core_mem_fetch_allocator : public mem_fetch_allocator {
 			return mf;
 		}
 
-		mem_fetch *alloc( new_addr_type addr, mem_access_type type, unsigned size, bool wr, unsigned stream_number = 0, bool is_prefetch = false) const 
+		mem_fetch *alloc( new_addr_type addr, mem_access_type type, unsigned size, bool wr, unsigned stream_number = 0, bool is_prefetch = false, unsigned warp_id = -1) const 
 		{
 			mem_access_t access( type, addr, size, wr, is_prefetch, stream_number);
 			mem_fetch *mf = new mem_fetch( access, 
 					NULL,
 					wr?WRITE_PACKET_SIZE:READ_PACKET_SIZE, 
-					-1, 
+					warp_id, 
 					m_core_id, 
 					m_cluster_id,
 					m_memory_config );
@@ -1628,7 +1650,7 @@ class prefetch_unit_functional {
 				unsigned data_size) :
 			data_size(data_size),
 			n_max_stream_buffers(n_max_stream_buffers),
-			n_stream_buffers(n_max_stream_buffers),
+			n_stream_buffers(0),
 			prefetch_address(n_max_stream_buffers) {}
 
 		~prefetch_unit_functional() {}
@@ -1823,7 +1845,7 @@ class shader_core_ctx : public core_t {
 
 		void inc_simt_to_mem(unsigned n_flits){ m_stats->n_simt_to_mem[m_sid] += n_flits; }
 		bool check_if_non_released_reduction_barrier(warp_inst_t &inst);
-		
+
 		simt_core_cluster *get_cluster() { return m_cluster; }		
 
 	private:
@@ -1922,7 +1944,8 @@ class shader_core_ctx : public core_t {
 		unsigned m_dynamic_warp_id;
 
 	public:
-		prefetch_unit_functional *prefetch_unit_func;
+		prefetch_unit_functional *prefetch_unit_read_func;
+		prefetch_unit_functional *prefetch_unit_write_func;
 		ldst_unit *m_ldst_unit;
 };
 

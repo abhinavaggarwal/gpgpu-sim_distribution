@@ -1053,15 +1053,22 @@ void shader_core_ctx::issue_block2core( kernel_info_t &kernel )
 {
     // Setup the stream buffer paramters
     function_info *finfo = kernel.entry();
-    unsigned n_streams = finfo->get_num_streams();
-    prefetch_unit_func->set_n_stream_buffers(n_streams);
-    m_ldst_unit->prefetch_unit_time->set_n_stream_buffers(n_streams);
-    for (unsigned i = 1 ; i <= n_streams ; i++) {
+    unsigned n_read_streams = finfo->get_num_read_streams();
+    prefetch_unit_read_func->set_n_stream_buffers(n_read_streams);
+    m_ldst_unit->prefetch_unit_read_time->set_n_stream_buffers(n_read_streams);
+    for (unsigned i = 1 ; i <= n_read_streams ; i++) {
 	addr_t addr = finfo->get_param_value(i);
-	prefetch_unit_func->set_prefetch_address(i-1, addr);
-	m_ldst_unit->prefetch_unit_time->set_prefetch_address(i-1, addr);
+	prefetch_unit_read_func->set_prefetch_address(i-1, addr);
+	m_ldst_unit->prefetch_unit_read_time->set_prefetch_address(i-1, addr);
     }
-
+    unsigned n_write_streams = finfo->get_num_write_streams();
+    prefetch_unit_write_func->set_n_stream_buffers(n_write_streams);
+    m_ldst_unit->prefetch_unit_write_time->set_n_stream_buffers(n_write_streams);
+    for (unsigned i = 1 ; i <= n_write_streams ; i++) {
+	addr_t addr = finfo->get_param_value(i + n_read_streams + 1);
+	prefetch_unit_write_func->set_prefetch_address(i-1, addr);
+	m_ldst_unit->prefetch_unit_write_time->set_prefetch_address(i-1, addr);
+    }
     set_max_cta(kernel);
 
     // find a free CTA context 

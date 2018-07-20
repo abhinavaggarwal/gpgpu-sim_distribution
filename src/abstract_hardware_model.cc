@@ -183,7 +183,7 @@ void warp_inst_t::generate_prefetch_accesses() {
 		if (!active(t)) {
 			continue;
 		}
-		bool is_write = false;
+		bool is_write = is_store();
 		unsigned segment_size = 0;
 		switch( data_size ) {
 			case 1: segment_size = 32; break;
@@ -201,7 +201,7 @@ void warp_inst_t::generate_prefetch_accesses() {
                 // Logging
 		// printf("Generating prefetch access for stream number : %u for address %llu\n", stream_number, m_per_scalar_thread[t].memreqaddr[0]);
 		// Generate the read request for head of stream
-		mem_access_type access_type = GLOBAL_ACC_R;
+		mem_access_type access_type = is_write ? GLOBAL_ACC_W : GLOBAL_ACC_R;
 		bool is_prefetch = false;
 		m_accessq.push_back(mem_access_t(access_type, m_per_scalar_thread[t].memreqaddr[0], segment_size, is_write, mask, bmask, is_prefetch, stream_number));
 	}

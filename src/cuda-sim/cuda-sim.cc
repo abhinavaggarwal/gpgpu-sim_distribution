@@ -1238,7 +1238,12 @@ void ptx_thread_info::ptx_exec_inst( warp_inst_t &inst, unsigned lane_id)
 				pI = pJ;
 			}
 			if (is_prefetch) {
-				stream_prefetch_impl(inst, pI, this);
+				if (inst.is_load()) {
+					stream_prefetch_read_impl(inst, pI, this);
+				} else {
+					assert(inst.is_store());
+					stream_prefetch_write_impl(inst, pI, this);
+				}
 				op_classification = 5; // Mem type
 			} else {
 				switch ( pI->get_opcode() ) {

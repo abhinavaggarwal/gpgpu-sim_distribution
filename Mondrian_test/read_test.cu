@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-__global__ void saxpy(unsigned num_streams, unsigned addr1, unsigned addr2, unsigned addr3, unsigned addr4, unsigned addr5, unsigned addr6, unsigned addr7, unsigned addr8, int dummy, float *x)
+__global__ void saxpy(unsigned num_rd_streams, unsigned addr1, unsigned addr2, unsigned addr3, unsigned addr4, unsigned addr5, unsigned addr6, unsigned addr7, unsigned addr8, unsigned num_wr_streams, int dummy, float *x)
 {
 	__shared__ float A[1000];
 	int id = blockIdx.x*blockDim.x + threadIdx.x;
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 	for (int i = 1 ; i <= N ; i++)
 		h_x[i-1] = (float)i;
 	cudaMemcpy(d_x, h_x, N*sizeof(float), cudaMemcpyHostToDevice);
-	saxpy<<<1, 8>>>(8, 100, 100, 100, 100, 100, 100, 100, 100, atoi(argv[1]), d_x);
+	saxpy<<<1, 8>>>(8, 100, 100, 100, 100, 100, 100, 100, 100, 0, atoi(argv[1]), d_x);
 	cudaMemcpy(h_x, d_x, sizeof(float), cudaMemcpyDeviceToHost);
 	printf("%f\n", *h_x);
 }
