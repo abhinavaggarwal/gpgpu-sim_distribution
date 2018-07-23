@@ -33,6 +33,7 @@
 
 #include <list>
 #include <queue>
+#include "../ramulator/Ramulator.h"
 
 class mem_fetch;
 
@@ -58,7 +59,7 @@ private:
 class memory_partition_unit
 {
 public: 
-   memory_partition_unit( unsigned partition_id, const struct memory_config *config, class memory_stats_t *stats );
+   memory_partition_unit( unsigned partition_id, const struct memory_config *config, class memory_stats_t *stats,  class Ramulator* ramulator_wrapper );
    ~memory_partition_unit(); 
 
    bool busy() const;
@@ -93,13 +94,14 @@ public:
    unsigned get_mpid() const { return m_id; }
 
 private: 
-
+   int return_q_size;
+   int sched_q_size;
    unsigned m_id;
    const struct memory_config *m_config;
    class memory_stats_t *m_stats;
    class memory_sub_partition **m_sub_partition; 
    class dram_t *m_dram;
-
+class Ramulator* m_ramulator_wrapper;
    class arbitration_metadata
    {
    public: 

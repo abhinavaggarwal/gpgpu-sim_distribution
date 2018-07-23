@@ -1522,7 +1522,7 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 			inst.active_count() == 0 ) {
 		// Use this idle cycle to send prefetch requests
 		// Read Prefetches
-		if (prefetch_unit_read_time->get_n_stream_buffers() > 0 ) {
+		if (prefetch_unit_read_time->get_n_stream_buffers() > 0) {
 			/* Policy to select the stream to issue prefetch from goes here */
 			unsigned stream_number = (last_read_stream_served + 1) % prefetch_unit_read_time->get_n_stream_buffers();
 			bool sent = false;
@@ -1530,7 +1530,7 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 			while (!sent && n_req < prefetch_unit_read_time->get_n_stream_buffers()) {
 				/* Policy to decide when to issue prefetch from a stream goes here */
 				if (prefetch_unit_read_time->can_issue(stream_number) &&
-						prefetch_unit_read_time->in_flight_requests < prefetch_unit_read_time->max_in_flight_requests) {
+						prefetch_unit_read_time->in_flight_requests < prefetch_unit_read_time->max_in_flight_requests && prefetch_unit_read_time->stream_length[stream_number] > 0) {
 					bool is_write = false;
 					bool is_prefetch = true;
 					unsigned segment_size = prefetch_unit_read_time->data_size * 8;
@@ -1542,6 +1542,7 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 						prefetch_unit_read_time->in_flight_requests++;
 						last_read_stream_served = stream_number;
 						sent = true;
+						prefetch_unit_read_time->stream_length[stream_number]--;
 					}
 				} else {
 					stream_number = (stream_number + 1) % prefetch_unit_read_time->get_n_stream_buffers();
@@ -1564,7 +1565,9 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 						prefetch_unit_write_time->write_buffer[stream_number].pop();
 					}
 				}
-				if (prefetch_unit_write_time->in_flight_requests < prefetch_unit_write_time->max_in_flight_requests && !prefetch_unit_write_time->ejection_buffer[stream_number].empty()) {
+				if (prefetch_unit_write_time->in_flight_requests < prefetch_unit_write_time->max_in_flight_requests && 
+				    !prefetch_unit_write_time->ejection_buffer[stream_number].empty() && 
+			            prefetch_unit_write_time->stream_length[stream_number] > 0) {
 					bool is_write = true;
 					bool is_prefetch = true;
 					unsigned segment_size = prefetch_unit_write_time->data_size * 8;
@@ -1578,6 +1581,7 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 						prefetch_unit_read_time->in_flight_requests++;
 						last_write_stream_served = stream_number;
 						sent = true;
+						prefetch_unit_write_time->stream_length[stream_number]--;
 					}
 				} else {
 					stream_number = (stream_number + 1) % prefetch_unit_write_time->get_n_stream_buffers();
@@ -1648,9 +1652,11 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 				if (!prefetch_unit_write_time->accept_write_request(stream_number, inst.warp_id())) {
 					// TODO: differentiate stream buffer stall types for read and write
 					stall_reason = STREAM_BUFFER_STALL;	
+					printf("Cycle %llu | pc %u | Stream buffer stall\n", gpu_tot_sim_cycle + gpu_sim_cycle, inst.pc);
 				} else {
 					inst.accessq_pop_back();
 					m_core->inc_store_req(inst.warp_id());
+					printf("Cycle %llu | pc %u | Stream buffer hit\n", gpu_tot_sim_cycle + gpu_sim_cycle, inst.pc);
 				}	
 			}
 		}
@@ -1663,7 +1669,7 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 			while (!sent && n_req < prefetch_unit_read_time->get_n_stream_buffers()) {
 				/* Policy to decide when to issue prefetch from a stream goes here */
 				if (prefetch_unit_read_time->can_issue(stream_number) &&
-						prefetch_unit_read_time->in_flight_requests < prefetch_unit_read_time->max_in_flight_requests) {
+						prefetch_unit_read_time->in_flight_requests < prefetch_unit_read_time->max_in_flight_requests && prefetch_unit_read_time->stream_length[stream_number] > 0) {
 					bool is_write = false;
 					bool is_prefetch = true;
 					unsigned segment_size = prefetch_unit_read_time->data_size * 8;
@@ -1675,6 +1681,7 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 						prefetch_unit_read_time->in_flight_requests++;
 						last_read_stream_served = stream_number;
 						sent = true;
+						prefetch_unit_read_time->stream_length[stream_number]--;
 					}
 				} else {
 					stream_number = (stream_number + 1) % prefetch_unit_read_time->get_n_stream_buffers();
@@ -1697,7 +1704,9 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 						prefetch_unit_write_time->write_buffer[stream_number].pop();
 					}
 				}
-				if (prefetch_unit_write_time->in_flight_requests < prefetch_unit_write_time->max_in_flight_requests && !prefetch_unit_write_time->ejection_buffer[stream_number].empty()) {
+				if (prefetch_unit_write_time->in_flight_requests < prefetch_unit_write_time->max_in_flight_requests && 
+				    !prefetch_unit_write_time->ejection_buffer[stream_number].empty() &&
+				    prefetch_unit_write_time->stream_length[stream_number] > 0) {
 					bool is_write = true;
 					bool is_prefetch = true;
 					unsigned segment_size = prefetch_unit_write_time->data_size * 8;
@@ -1711,6 +1720,7 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 						prefetch_unit_read_time->in_flight_requests++;
 						last_write_stream_served = stream_number;
 						sent = true;
+						prefetch_unit_write_time->stream_length[stream_number]--;
 					}
 				} else {
 					stream_number = (stream_number + 1) % prefetch_unit_write_time->get_n_stream_buffers();
@@ -1869,6 +1879,14 @@ void ldst_unit::init( mem_fetch_interface *icnt,
 		unsigned sid,
 		unsigned tpc ) 
 {
+	prefetch_limit[0] = 1000;
+	prefetch_limit[1] = 1000;
+	prefetch_limit[2] = 1000;
+	prefetch_limit[3] = 1000;
+	prefetch_limit[4] = 1000;
+	prefetch_limit[5] = 1000;
+	prefetch_limit[6] = 1000;
+	prefetch_limit[7] = 1000;
 	last_read_stream_served = -1;
 	last_write_stream_served = -1;
 	prefetch_unit_read_time = new prefetch_unit_read_timing(config->warp_size, 400, 4, 50);

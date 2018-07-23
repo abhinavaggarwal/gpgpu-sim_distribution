@@ -1138,7 +1138,7 @@ public:
    unsigned get_num_write_streams() {
 	assert(!m_ptx_kernel_param_info.empty());
 	param_info &p = m_ptx_kernel_param_info.begin()->second;
-	unsigned i = *(unsigned *)(p.get_value().pdata) + 1;
+	unsigned i = *(unsigned *)(p.get_value().pdata) + 2;
 	return get_param_value(i);
    } 
 	

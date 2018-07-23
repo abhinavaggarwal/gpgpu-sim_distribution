@@ -33,6 +33,7 @@
 #include "../trace.h"
 #include "addrdec.h"
 #include "shader.h"
+#include "../ramulator/Ramulator.h"
 #include <iostream>
 #include <fstream>
 #include <list>
@@ -316,7 +317,10 @@ public:
     unsigned get_max_concurrent_kernel() const { return max_concurrent_kernel; }
 
 private:
-    void init_clock_domains(void ); 
+    void init_clock_domains(void );
+    // ramulator configs
+    char *gpgpu_ramulator_config;
+    unsigned gpgpu_ramulator_cache_line_size;
 
 
     bool m_valid;
@@ -473,6 +477,7 @@ private:
    unsigned long long  gpu_tot_issued_cta;
    unsigned long long  last_gpu_sim_insn;
 
+   Ramulator m_ramulator_wrapper;
    unsigned long long  last_liveness_message_time; 
 
    std::map<std::string, FuncCache> m_special_cache_config;

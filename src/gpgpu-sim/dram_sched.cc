@@ -129,7 +129,6 @@ void dram_t::scheduler_frfcfs()
 {
    unsigned mrq_latency;
    frfcfs_scheduler *sched = m_frfcfs_scheduler;
-   bool idle = mrqq->empty();
    while ( !mrqq->empty() && (!m_config->gpgpu_frfcfs_dram_sched_queue_size || sched->num_pending() < m_config->gpgpu_frfcfs_dram_sched_queue_size)) {
       dram_req_t *req = mrqq->pop();
 
@@ -146,10 +145,7 @@ void dram_t::scheduler_frfcfs()
       req->data->set_status(IN_PARTITION_MC_INPUT_QUEUE,gpu_sim_cycle+gpu_tot_sim_cycle);
       sched->add_req(req);
    }
-   if (idle) {
-       // Logging
-       // printf("Memory sitting idle because mrqq empty\n");
-   }
+
    dram_req_t *req;
    unsigned i;
    for ( i=0; i < m_config->nbk; i++ ) {

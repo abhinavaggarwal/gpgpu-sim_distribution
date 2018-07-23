@@ -58,6 +58,10 @@ public:
                const class memory_config *config );
    ~mem_fetch();
 
+
+   //tara
+   unsigned m_mid;
+   void set_mid( unsigned mid) { m_mid=mid;}
    void set_status( enum mem_fetch_status status, unsigned long long cycle );
    void set_reply() 
    { 

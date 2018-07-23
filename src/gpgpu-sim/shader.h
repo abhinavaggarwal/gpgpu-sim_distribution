@@ -1084,6 +1084,7 @@ class prefetch_unit_timing {
 			stream_buffer_max_size(stream_buffer_max_size),
 			data_size(data_size),
 			max_in_flight_requests_percentage(max_in_flight_requests_percentage),
+			stream_length(n_max_stream_buffers),
 			prefetch_address(n_max_stream_buffers) {
 				max_in_flight_requests = (max_in_flight_requests_percentage / 100.0) * stream_buffer_max_size;
 				in_flight_requests = 0;
@@ -1105,6 +1106,7 @@ class prefetch_unit_timing {
 		unsigned max_in_flight_requests_percentage;
 		unsigned max_in_flight_requests;
 		unsigned in_flight_requests;
+		std::vector<unsigned> stream_length;
 
 	protected:
 		std::vector<addr_t> prefetch_address;
@@ -1255,6 +1257,7 @@ class ldst_unit: public pipelined_simd_unit {
 		unsigned last_write_stream_served;
 
 	public:
+		unsigned prefetch_limit[8];
 		prefetch_unit_read_timing *prefetch_unit_read_time;
 		prefetch_unit_write_timing *prefetch_unit_write_time;
 };

@@ -438,6 +438,9 @@ void gpgpu_sim_config::reg_options(option_parser_t opp)
     option_parser_register(opp, "-trace_sampling_memory_partition", OPT_INT32, 
                           &Trace::sampling_memory_partition, "The memory partition which is printed using MEMPART_DPRINTF. Default -1 (i.e. all)",
                           "-1");
+   //Tara
+   option_parser_register(opp, "-gpgpu_ramulator_config", OPT_CSTR, &gpgpu_ramulator_config , " Ramulator config file address.","/home/nastaran/ramulator+gpu/amoebatc/src/ramulator/configs/GDDR5-config.cfg");
+   option_parser_register(opp, "-gpgpu_ramulator_cache_line_size", OPT_INT32, &gpgpu_ramulator_cache_line_size , " Ramulator cache line size.","64");
    ptx_file_line_stats_options(opp);
 }
 
@@ -545,7 +548,8 @@ void gpgpu_sim::set_kernel_done( kernel_info_t *kernel )
 void set_ptx_warp_size(const struct core_config * warp_size);
 
 gpgpu_sim::gpgpu_sim( const gpgpu_sim_config &config ) 
-    : gpgpu_t(config), m_config(config)
+    : gpgpu_t(config), m_config(config),
+	m_ramulator_wrapper(config.gpgpu_ramulator_config, config.m_shader_config.n_simt_clusters * config.m_shader_config.n_simt_cores_per_cluster , config.gpgpu_ramulator_cache_line_size )
 { 
     m_shader_config = &m_config.m_shader_config;
     m_memory_config = &m_config.m_memory_config;
@@ -575,7 +579,7 @@ gpgpu_sim::gpgpu_sim( const gpgpu_sim_config &config )
     m_memory_partition_unit = new memory_partition_unit*[m_memory_config->m_n_mem];
     m_memory_sub_partition = new memory_sub_partition*[m_memory_config->m_n_mem_sub_partition];
     for (unsigned i=0;i<m_memory_config->m_n_mem;i++) {
-        m_memory_partition_unit[i] = new memory_partition_unit(i, m_memory_config, m_memory_stats);
+        m_memory_partition_unit[i] = new memory_partition_unit(i, m_memory_config, m_memory_stats, &m_ramulator_wrapper);
         for (unsigned p = 0; p < m_memory_config->m_n_sub_partition_per_memory_channel; p++) {
             unsigned submpid = i * m_memory_config->m_n_sub_partition_per_memory_channel + p; 
             m_memory_sub_partition[submpid] = m_memory_partition_unit[i]->get_sub_partition(p); 
@@ -658,14 +662,31 @@ void gpgpu_sim::reinit_clock_domains(void)
 
 bool gpgpu_sim::active()
 {
-    if (m_config.gpu_max_cycle_opt && (gpu_tot_sim_cycle + gpu_sim_cycle) >= m_config.gpu_max_cycle_opt) 
+    if (m_config.gpu_max_cycle_opt && (gpu_tot_sim_cycle + gpu_sim_cycle) >= m_config.gpu_max_cycle_opt){ 
+	m_ramulator_wrapper.finish();
+	update_stats();
+	print_stats();
        return false;
-    if (m_config.gpu_max_insn_opt && (gpu_tot_sim_insn + gpu_sim_insn) >= m_config.gpu_max_insn_opt) 
+    }
+    if (m_config.gpu_max_insn_opt && (gpu_tot_sim_insn + gpu_sim_insn) >= m_config.gpu_max_insn_opt) {
+       //return false;
+	m_ramulator_wrapper.finish();
+	update_stats();
+	print_stats();
+	return false;
+    }
+    if (m_config.gpu_max_cta_opt && (gpu_tot_issued_cta >= m_config.gpu_max_cta_opt) ){
+	m_ramulator_wrapper.finish();
+	update_stats();
+	print_stats();
        return false;
-    if (m_config.gpu_max_cta_opt && (gpu_tot_issued_cta >= m_config.gpu_max_cta_opt) )
+    }
+    if (m_config.gpu_deadlock_detect && gpu_deadlock) {
+	m_ramulator_wrapper.finish();
+	update_stats();
+	print_stats();
        return false;
-    if (m_config.gpu_deadlock_detect && gpu_deadlock) 
-       return false;
+    }
     for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) 
        if( m_cluster[i]->get_not_completed()>0 ) 
            return true;;
@@ -676,6 +697,9 @@ bool gpgpu_sim::active()
         return true;
     if( get_more_cta_left() )
         return true;
+    m_ramulator_wrapper.finish();
+    update_stats();
+    print_stats();
     return false;
 }
 
@@ -725,6 +749,7 @@ void gpgpu_sim::update_stats() {
 
 void gpgpu_sim::print_stats()
 {
+    m_ramulator_wrapper.finish();
     ptx_file_line_stats_write_file();
     gpu_print_stat();
 
@@ -1061,13 +1086,21 @@ void shader_core_ctx::issue_block2core( kernel_info_t &kernel )
 	prefetch_unit_read_func->set_prefetch_address(i-1, addr);
 	m_ldst_unit->prefetch_unit_read_time->set_prefetch_address(i-1, addr);
     }
+    unsigned stream_length = finfo->get_param_value(n_read_streams + 1);
+    for (unsigned i = 0 ; i < n_read_streams ; i++) {
+	m_ldst_unit->prefetch_unit_read_time->stream_length[i] = stream_length;
+    }
     unsigned n_write_streams = finfo->get_num_write_streams();
     prefetch_unit_write_func->set_n_stream_buffers(n_write_streams);
     m_ldst_unit->prefetch_unit_write_time->set_n_stream_buffers(n_write_streams);
     for (unsigned i = 1 ; i <= n_write_streams ; i++) {
-	addr_t addr = finfo->get_param_value(i + n_read_streams + 1);
+	addr_t addr = finfo->get_param_value(i + n_read_streams + 2);
 	prefetch_unit_write_func->set_prefetch_address(i-1, addr);
 	m_ldst_unit->prefetch_unit_write_time->set_prefetch_address(i-1, addr);
+    }
+    stream_length = finfo->get_param_value(n_write_streams + n_read_streams + 3);
+    for (unsigned i = 0 ; i < n_write_streams ; i++) {
+	m_ldst_unit->prefetch_unit_write_time->stream_length[i] = stream_length;
     }
     set_max_cta(kernel);
 
@@ -1208,12 +1241,13 @@ void gpgpu_sim::cycle()
     }
 
    if (clock_mask & DRAM) {
-      for (unsigned i=0;i<m_memory_config->m_n_mem;i++){
-         m_memory_partition_unit[i]->dram_cycle(); // Issue the dram command (scheduler + delay model)
-         // Update performance counters for DRAM
-         m_memory_partition_unit[i]->set_dram_power_stats(m_power_stats->pwr_mem_stat->n_cmd[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_activity[CURRENT_STAT_IDX][i],
-                        m_power_stats->pwr_mem_stat->n_nop[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_act[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_pre[CURRENT_STAT_IDX][i],
-                        m_power_stats->pwr_mem_stat->n_rd[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_wr[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_req[CURRENT_STAT_IDX][i]);
+	   m_ramulator_wrapper.tick();//TARA - This is where we clock the DRAM (Ramulator) by DRAM frequency
+	   for (unsigned i=0;i<m_memory_config->m_n_mem;i++){
+		   m_memory_partition_unit[i]->dram_cycle(); // Issue the dram command (scheduler + delay model)
+		   // Update performance counters for DRAM
+		   m_memory_partition_unit[i]->set_dram_power_stats(m_power_stats->pwr_mem_stat->n_cmd[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_activity[CURRENT_STAT_IDX][i],
+				   m_power_stats->pwr_mem_stat->n_nop[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_act[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_pre[CURRENT_STAT_IDX][i],
+				   m_power_stats->pwr_mem_stat->n_rd[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_wr[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_req[CURRENT_STAT_IDX][i]);
       }
    }
 
@@ -1228,6 +1262,8 @@ void gpgpu_sim::cycle()
              // Logging
              // printf("icnt-l2-queue full\n");
           } else {
+	      // Logging 
+	      // printf("popped from icnt to memory\n");
               mem_fetch* mf = (mem_fetch*) icnt_pop( m_shader_config->mem2device(i) );
               m_memory_sub_partition[i]->push( mf, gpu_sim_cycle + gpu_tot_sim_cycle );
           }
