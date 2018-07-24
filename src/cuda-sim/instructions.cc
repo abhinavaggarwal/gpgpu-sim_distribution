@@ -3722,10 +3722,9 @@ void stream_prefetch_write_impl(warp_inst_t &wI, ptx_instruction *pI, ptx_thread
         memory_space *mem = NULL;
         addr_t addr = addr_reg.u32;
 
-	// TODO: Resolve inconsistency between stream_number extraction between reads and writes
         unsigned stream_number = addr;
         // Logging
-        printf("Stream number : %u\n", stream_number);
+        // printf("Stream number : %u\n", stream_number);
 
         decode_space(space, thread, dst, mem, addr);
 
