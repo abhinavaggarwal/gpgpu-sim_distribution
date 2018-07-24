@@ -1879,14 +1879,6 @@ void ldst_unit::init( mem_fetch_interface *icnt,
 		unsigned sid,
 		unsigned tpc ) 
 {
-	prefetch_limit[0] = 1000;
-	prefetch_limit[1] = 1000;
-	prefetch_limit[2] = 1000;
-	prefetch_limit[3] = 1000;
-	prefetch_limit[4] = 1000;
-	prefetch_limit[5] = 1000;
-	prefetch_limit[6] = 1000;
-	prefetch_limit[7] = 1000;
 	last_read_stream_served = -1;
 	last_write_stream_served = -1;
 	prefetch_unit_read_time = new prefetch_unit_read_timing(config->warp_size, 400, 4, 50);
