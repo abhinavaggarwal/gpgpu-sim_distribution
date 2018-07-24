@@ -463,7 +463,8 @@ void shader_core_stats::print( FILE* fout ) const
 	fprintf(fout, "gpgpu_stall_shd_mem[l_mem_ld][wb_icnt_rc] = %d\n", gpu_stall_shd_mem_breakdown[L_MEM_ST][WB_ICNT_RC_FAIL]);
 	fprintf(fout, "gpgpu_stall_shd_mem[l_mem_ld][wb_rsrv_fail] = %d\n", gpu_stall_shd_mem_breakdown[L_MEM_ST][WB_CACHE_RSRV_FAIL]);
 
-	fprintf(fout, "gpgpu_stall_shd_mem[g_mem_ld][stream_buffer_stall] = %d\n", gpu_stall_shd_mem_breakdown[G_MEM_LD][STREAM_BUFFER_STALL]);
+	fprintf(fout, "gpgpu_stall_shd_mem[g_mem_ld][stream_buffer_read_stall] = %d\n", gpu_stall_shd_mem_breakdown[G_MEM_LD][STREAM_BUFFER_READ_STALL]);
+	fprintf(fout, "gpgpu_stall_shd_mem[g_mem_ld][stream_buffer_write_stall] = %d\n", gpu_stall_shd_mem_breakdown[G_MEM_ST][STREAM_BUFFER_WRITE_STALL]);
 
 	fprintf(fout, "gpu_reg_bank_conflict_stalls = %d\n", gpu_reg_bank_conflict_stalls);
 
@@ -1631,7 +1632,7 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 				// Logging
 				// printf("Reading stream address : %llu\n", access.get_addr());
 				if (!prefetch_unit_read_time->read(stream_number, access.get_addr())) {
-					stall_reason = STREAM_BUFFER_STALL;
+					stall_reason = STREAM_BUFFER_READ_STALL;
 					printf("Cycle %llu | pc %u | Stream buffer stall\n", gpu_tot_sim_cycle + gpu_sim_cycle, inst.pc);
 				} else {
 					inst.accessq_pop_back();
@@ -1650,8 +1651,7 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 				access_type = G_MEM_ST; // used by caller of this function in case of stall
 				unsigned stream_number = access.stream_number;
 				if (!prefetch_unit_write_time->accept_write_request(stream_number, inst.warp_id())) {
-					// TODO: differentiate stream buffer stall types for read and write
-					stall_reason = STREAM_BUFFER_STALL;	
+					stall_reason = STREAM_BUFFER_WRITE_STALL;	
 					printf("Cycle %llu | pc %u | Stream buffer stall\n", gpu_tot_sim_cycle + gpu_sim_cycle, inst.pc);
 				} else {
 					inst.accessq_pop_back();
