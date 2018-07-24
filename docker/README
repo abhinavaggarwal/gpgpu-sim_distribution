@@ -1,7 +1,7 @@
 To Build : 
 	docker build . -t IMAGE_NAME
 To Run :
-	docker run --privileged -it -v HOST_TEST_DIR:MOUNTED_TEST_DIR -v HOST_REPO_CLONE:MOUNTED_REPO_CLONE IMAGE_NAME
+	docker run --privileged -it -v HOST_REPO_CLONE:MOUNTED_REPO_CLONE IMAGE_NAME
 
 1. You need to use --privileged flag to enable gdb debugging.
 2. Before you build docker image, download cudatoolkit_4.0.17_linux_64_ubuntu10.10.run file in the docker directory.
