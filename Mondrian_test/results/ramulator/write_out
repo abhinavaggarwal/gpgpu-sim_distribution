@@ -70,7 +70,7 @@ GPGPU-Sim: Configuration options:
 -gpgpu_num_mem_units                    1 # Number if ldst units (default=1) WARNING: not hooked up to anything
 -gpgpu_scheduler                      gto # Scheduler configuration: < lrr | gto | two_level_active > If two_level_active:<num_active_warps>:<inner_prioritization>:<outer_prioritization>For complete list of prioritization values see shader.h enum scheduler_prioritization_typeDefault: gto
 -gpgpu_dram_scheduler                    1 # 0 = fifo, 1 = FR-FCFS (defaul)
--gpgpu_dram_partition_queues              8:8:8:8 # i2$:$2d:d2$:$2i
+-gpgpu_dram_partition_queues          32:32:32:32 # i2$:$2d:d2$:$2i
 -l2_ideal                               0 # Use a ideal L2 cache that always hit
 -gpgpu_cache:dl2                     none # unified banked L2 data cache config  {<nsets>:<bsize>:<assoc>,<rep>:<wr>:<alloc>:<wr_alloc>,<mshr>:<N>:<merge>,<mq>}
 -gpgpu_cache:dl2_texture_only                    1 # L2 cache used for texture only
@@ -168,13 +168,13 @@ GPGPU-Sim uArch:    3   4   5
 GPGPU-Sim uArch:    6   7   8
 GPGPU-Sim uArch:    9  10  11
 GPGPU-Sim uArch:   12
-673eaeae3f50dd077384f5e36d98349d  /home/gpgpu-sim/Mondrian_test/a.out
+6367744eba947ade6fec15bc7220b1cc  /home/gpgpu-sim/Mondrian_test/a.out
 GPGPU-Sim uArch: performance model initialization complete.
 GPGPU-Sim PTX: __cudaRegisterFatBinary, fat_cubin_handle = 1, filename=write_test_inline_ptx.cu
 self exe links to: /home/gpgpu-sim/Mondrian_test/a.out
 Running md5sum using "md5sum /home/gpgpu-sim/Mondrian_test/a.out "
-Running cuobjdump using "$CUDA_INSTALL_PATH/bin/cuobjdump -ptx -elf -sass /home/gpgpu-sim/Mondrian_test/a.out > _cuobjdump_complete_output_H4ae9s"
-Parsing file _cuobjdump_complete_output_H4ae9s
+Running cuobjdump using "$CUDA_INSTALL_PATH/bin/cuobjdump -ptx -elf -sass /home/gpgpu-sim/Mondrian_test/a.out > _cuobjdump_complete_output_0TmCFq"
+Parsing file _cuobjdump_complete_output_0TmCFq
 ######### cuobjdump parser ########
 ## Adding new section ELF
 Adding arch: sm_10
@@ -193,19 +193,19 @@ GPGPU-Sim PTX: Finding postdominators for '_Z5saxpyjjjjjjjjjjjj'...
 GPGPU-Sim PTX: Finding immediate postdominators for '_Z5saxpyjjjjjjjjjjjj'...
 GPGPU-Sim PTX: pre-decoding instructions for '_Z5saxpyjjjjjjjjjjjj'...
 GPGPU-Sim PTX: reconvergence points for _Z5saxpyjjjjjjjjjjjj...
-GPGPU-Sim PTX:  1 (potential) branch divergence @  PC=0x018 (_1.ptx:72) @%p1 bra $Lt_0_2050;
-GPGPU-Sim PTX:    immediate post dominator      @  PC=0x088 (_1.ptx:99) exit;
-GPGPU-Sim PTX:  2 (potential) branch divergence @  PC=0x080 (_1.ptx:96) @%p2 bra $Lt_0_3074;
-GPGPU-Sim PTX:    immediate post dominator      @  PC=0x088 (_1.ptx:99) exit;
+GPGPU-Sim PTX:  1 (potential) branch divergence @  PC=0x018 (_1.ptx:71) @%p1 bra $Lt_0_2050;
+GPGPU-Sim PTX:    immediate post dominator      @  PC=0x088 (_1.ptx:98) exit;
+GPGPU-Sim PTX:  2 (potential) branch divergence @  PC=0x080 (_1.ptx:95) @%p2 bra $Lt_0_3074;
+GPGPU-Sim PTX:    immediate post dominator      @  PC=0x088 (_1.ptx:98) exit;
 GPGPU-Sim PTX: ... end of reconvergence points for _Z5saxpyjjjjjjjjjjjj
 GPGPU-Sim PTX: ... done pre-decoding instructions for '_Z5saxpyjjjjjjjjjjjj'.
 GPGPU-Sim PTX: finished parsing EMBEDDED .ptx file _1.ptx
 Adding _cuobjdump_1.ptx with cubin handle 1
-GPGPU-Sim PTX: extracting embedded .ptx to temporary file "_ptx_j6UcHG"
-Running: cat _ptx_j6UcHG | sed 's/.version 1.5/.version 1.4/' | sed 's/, texmode_independent//' | sed 's/\(\.extern \.const\[1\] .b8 \w\+\)\[\]/\1\[1\]/' | sed 's/const\[.\]/const\[0\]/g' > _ptx2_Fz7cfU
-GPGPU-Sim PTX: generating ptxinfo using "$CUDA_INSTALL_PATH/bin/ptxas --gpu-name=sm_20 -v _ptx2_Fz7cfU --output-file  /dev/null 2> _ptx_j6UcHGinfo"
+GPGPU-Sim PTX: extracting embedded .ptx to temporary file "_ptx_H2UNd0"
+Running: cat _ptx_H2UNd0 | sed 's/.version 1.5/.version 1.4/' | sed 's/, texmode_independent//' | sed 's/\(\.extern \.const\[1\] .b8 \w\+\)\[\]/\1\[1\]/' | sed 's/const\[.\]/const\[0\]/g' > _ptx2_Bdw0Lz
+GPGPU-Sim PTX: generating ptxinfo using "$CUDA_INSTALL_PATH/bin/ptxas --gpu-name=sm_20 -v _ptx2_Bdw0Lz --output-file  /dev/null 2> _ptx_H2UNd0info"
 GPGPU-Sim PTX: Kernel '_Z5saxpyjjjjjjjjjjjj' : regs=4, lmem=0, smem=0, cmem=80
-GPGPU-Sim PTX: removing ptxinfo using "rm -f _ptx_j6UcHG _ptx2_Fz7cfU _ptx_j6UcHGinfo"
+GPGPU-Sim PTX: removing ptxinfo using "rm -f _ptx_H2UNd0 _ptx2_Bdw0Lz _ptx_H2UNd0info"
 GPGPU-Sim PTX: loading globals with explicit initializers... 
 GPGPU-Sim PTX: finished loading globals (0 bytes total).
 GPGPU-Sim PTX: loading constants with explicit initializers...  done.
@@ -1444,7 +1444,7 @@ Issue stall: Idle/Control Hazard: 496
 Issue stall: Idle/Control Hazard: 497
 Issue stall: Idle/Control Hazard: 498
 Issue stall: Idle/Control Hazard: 499
-GPGPU-Sim uArch: cycles simulated: 500  inst.: 120 (ipc= 0.2) sim_rate=120 (inst/sec) elapsed = 0:0:00:01 / Wed Jul 25 13:58:21 2018
+GPGPU-Sim uArch: cycles simulated: 500  inst.: 120 (ipc= 0.2) sim_rate=120 (inst/sec) elapsed = 0:0:00:01 / Wed Jul 25 14:52:24 2018
 Issue stall: Idle/Control Hazard: 500
 Issue stall: Idle/Control Hazard: 501
 Issue stall: Idle/Control Hazard: 502
@@ -42938,97 +42938,3 @@ gpgpu_simulation_rate = 26028 (cycle/sec)
 0
 0
 0
-kernel_name = 
-kernel_launch_uid = 
-gpu_sim_cycle = 0
-gpu_sim_insn = 0
-gpu_ipc =         -nan
-gpu_tot_sim_cycle = 26028
-gpu_tot_sim_insn = 35808
-gpu_tot_ipc =       1.3757
-gpu_tot_issued_cta = 0
-gpu_stall_dramfull = 0
-gpu_stall_icnt2sh    = 0
-gpu_total_sim_rate=35808
-
-========= Core cache stats =========
-L1I_cache:
-	L1I_total_cache_accesses = 872
-	L1I_total_cache_misses = 2
-	L1I_total_cache_miss_rate = 0.0023
-	L1I_total_cache_pending_hits = 0
-	L1I_total_cache_reservation_fails = 0
-L1C_cache:
-	L1C_total_cache_accesses = 0
-	L1C_total_cache_misses = 0
-	L1C_total_cache_pending_hits = 0
-	L1C_total_cache_reservation_fails = 0
-L1T_cache:
-	L1T_total_cache_accesses = 0
-	L1T_total_cache_misses = 0
-	L1T_total_cache_pending_hits = 0
-	L1T_total_cache_reservation_fails = 0
-
-Total_core_cache_stats:
-	Total_core_cache_stats_breakdown[INST_ACC_R][HIT] = 870
-	Total_core_cache_stats_breakdown[INST_ACC_R][MISS] = 2
-Shader 0 warp_id issue ditsribution:
-warp_id:
-0, 
-distro:
-1620, 
-gpgpu_n_tot_thrd_icount = 11952
-gpgpu_n_tot_w_icount = 1494
-gpgpu_n_stall_shd_mem = 6944
-gpgpu_n_mem_read_local = 0
-gpgpu_n_mem_write_local = 0
-gpgpu_n_mem_read_global = 0
-gpgpu_n_mem_write_global = 7936
-gpgpu_n_mem_texture = 0
-gpgpu_n_mem_const = 0
-gpgpu_n_load_insn  = 0
-gpgpu_n_store_insn = 7936
-gpgpu_n_shmem_insn = 0
-gpgpu_n_tex_insn = 0
-gpgpu_n_const_mem_insn = 0
-gpgpu_n_param_mem_insn = 0
-gpgpu_n_shmem_bkconflict = 0
-gpgpu_n_cache_bkconflict = 0
-gpgpu_n_intrawarp_mshr_merge = 0
-gpgpu_n_cmem_portconflict = 0
-gpgpu_stall_shd_mem[c_mem][bk_conf] = 0
-gpgpu_stall_shd_mem[c_mem][mshr_rc] = 0
-gpgpu_stall_shd_mem[c_mem][icnt_rc] = 0
-gpgpu_stall_shd_mem[c_mem][data_port_stall] = 0
-gpgpu_stall_shd_mem[t_mem][mshr_rc] = 0
-gpgpu_stall_shd_mem[t_mem][icnt_rc] = 0
-gpgpu_stall_shd_mem[t_mem][data_port_stall] = 0
-gpgpu_stall_shd_mem[s_mem][bk_conf] = 0
-gpgpu_stall_shd_mem[gl_mem][bk_conf] = 0
-gpgpu_stall_shd_mem[gl_mem][coal_stall] = 6944
-gpgpu_stall_shd_mem[gl_mem][data_port_stall] = 0
-gpgpu_stall_shd_mem[g_mem_ld][mshr_rc] = 0
-gpgpu_stall_shd_mem[g_mem_ld][icnt_rc] = 0
-gpgpu_stall_shd_mem[g_mem_ld][wb_icnt_rc] = 0
-gpgpu_stall_shd_mem[g_mem_ld][wb_rsrv_fail] = 0
-gpgpu_stall_shd_mem[g_mem_st][mshr_rc] = 0
-gpgpu_stall_shd_mem[g_mem_st][icnt_rc] = 0
-gpgpu_stall_shd_mem[g_mem_st][wb_icnt_rc] = 0
-gpgpu_stall_shd_mem[g_mem_st][wb_rsrv_fail] = 0
-gpgpu_stall_shd_mem[l_mem_ld][mshr_rc] = 0
-gpgpu_stall_shd_mem[l_mem_ld][icnt_rc] = 0
-gpgpu_stall_shd_mem[l_mem_ld][wb_icnt_rc] = 0
-gpgpu_stall_shd_mem[l_mem_ld][wb_rsrv_fail] = 0
-gpgpu_stall_shd_mem[l_mem_st][mshr_rc] = 0
-gpgpu_stall_shd_mem[l_mem_st][icnt_rc] = 0
-gpgpu_stall_shd_mem[l_mem_ld][wb_icnt_rc] = 0
-gpgpu_stall_shd_mem[l_mem_ld][wb_rsrv_fail] = 0
-gpgpu_stall_shd_mem[g_mem_ld][stream_buffer_read_stall] = 0
-gpgpu_stall_shd_mem[g_mem_st][stream_buffer_write_stall] = 0
-gpu_reg_bank_conflict_stalls = 0
-Warp Occupancy Distribution:
-Stall:3695	W0_Idle:1750	W0_Scoreboard:1863	W1:0	W2:0	W3:0	W4:0	W5:0	W6:0	W7:0	W8:1494
-traffic_breakdown_coretomem[GLOBAL_ACC_W] = 317440 {40:7936,}
-traffic_breakdown_coretomem[INST_ACC_R] = 16 {8:2,}
-traffic_breakdown_memtocore[GLOBAL_ACC_W] = 63488 {8:7936,}
-traffic_breakdown_memtocore[INST_ACC_R] = 272 {136:2,}

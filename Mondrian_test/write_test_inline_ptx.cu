@@ -4,17 +4,17 @@
 
 __global__ void saxpy(unsigned num_rd_streams, unsigned rd_stream_length, unsigned num_wr_streams, unsigned addr1, unsigned addr2, unsigned addr3, unsigned addr4, unsigned addr5, unsigned addr6, unsigned addr7, unsigned addr8, unsigned wr_stream_length)
 {
-	unsigned long long id = threadIdx.x;
+	unsigned id = threadIdx.x;
 	if (id <= 8) {
 		for (unsigned i = 0; i < 1000 - 8; i += 8) {
-			asm volatile ("st.shared.u32 [%%rd1], 4;");
-			asm volatile ("st.shared.u32 [%%rd1], 4;");
-			asm volatile ("st.shared.u32 [%%rd1], 4;");
-			asm volatile ("st.shared.u32 [%%rd1], 4;");
-			asm volatile ("st.shared.u32 [%%rd1], 4;");
-			asm volatile ("st.shared.u32 [%%rd1], 4;");
-			asm volatile ("st.shared.u32 [%%rd1], 4;");
-			asm volatile ("st.shared.u32 [%%rd1], 4;");
+			asm volatile ("st.shared.u32 [%%r1], 4;");
+			asm volatile ("st.shared.u32 [%%r1], 4;");
+			asm volatile ("st.shared.u32 [%%r1], 4;");
+			asm volatile ("st.shared.u32 [%%r1], 4;");
+			asm volatile ("st.shared.u32 [%%r1], 4;");
+			asm volatile ("st.shared.u32 [%%r1], 4;");
+			asm volatile ("st.shared.u32 [%%r1], 4;");
+			asm volatile ("st.shared.u32 [%%r1], 4;");
 		}
 	}
 }

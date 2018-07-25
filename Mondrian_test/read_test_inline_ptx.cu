@@ -4,18 +4,18 @@
 
 __global__ void saxpy(unsigned num_rd_streams, unsigned addr1, unsigned addr2, unsigned addr3, unsigned addr4, unsigned addr5, unsigned addr6, unsigned addr7, unsigned addr8, unsigned rd_stream_length, unsigned num_wr_streams, unsigned wr_stream_length)
 {
-	int id = threadIdx.x;
+	unsigned id = threadIdx.x;
 	if (id <= 8) {
 		for (int i = 0; i < 1000 - 8; i += 8) {
 			unsigned a;
-			asm ("ld.shared.u32 %0, [%1];" : "=r"(a) : "r"(id) );
-			asm ("ld.shared.u32 %0, [%1];" : "=r"(a) : "r"(id) );
-			asm ("ld.shared.u32 %0, [%1];" : "=r"(a) : "r"(id) );
-			asm ("ld.shared.u32 %0, [%1];" : "=r"(a) : "r"(id) );
-			asm ("ld.shared.u32 %0, [%1];" : "=r"(a) : "r"(id) );
-			asm ("ld.shared.u32 %0, [%1];" : "=r"(a) : "r"(id) );
-			asm ("ld.shared.u32 %0, [%1];" : "=r"(a) : "r"(id) );
-			asm ("ld.shared.u32 %0, [%1];" : "=r"(a) : "r"(id) );
+			asm ("ld.shared.u32 %0, [%%r1];" : "=r"(a));
+			asm ("ld.shared.u32 %0, [%%r1];" : "=r"(a));
+			asm ("ld.shared.u32 %0, [%%r1];" : "=r"(a));
+			asm ("ld.shared.u32 %0, [%%r1];" : "=r"(a));
+			asm ("ld.shared.u32 %0, [%%r1];" : "=r"(a));
+			asm ("ld.shared.u32 %0, [%%r1];" : "=r"(a));
+			asm ("ld.shared.u32 %0, [%%r1];" : "=r"(a));
+			asm ("ld.shared.u32 %0, [%%r1];" : "=r"(a));
 		}
 	}
 }
