@@ -4,7 +4,7 @@
 
 __global__ void saxpy(unsigned num_rd_streams, unsigned addr1, unsigned addr2, unsigned addr3, unsigned addr4, unsigned addr5, unsigned addr6, unsigned addr7, unsigned addr8, unsigned rd_stream_length, unsigned num_wr_streams, unsigned wr_stream_length, unsigned *x)
 {
-	int id = blockIdx.x*blockDim.x + threadIdx.x;
+	int id = threadIdx.x;
 	if (id <= 0) {
 		unsigned a;
 		asm ("ld.shared.u32 %0, [%1];" : "=r"(a) : "r"(id) );
