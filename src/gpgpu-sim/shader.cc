@@ -2142,6 +2142,9 @@ void ldst_unit::cycle()
 		} else {
 			if( mf->get_type() == WRITE_ACK || ( m_config->gpgpu_perfect_mem && mf->get_is_write() )) {
 				m_core->store_ack(mf);
+				if (mf->is_prefetch) {
+					prefetch_unit_write_time->in_flight_requests--;				
+				}
 				m_response_fifo.pop_front();
 				delete mf;
 			} else {
