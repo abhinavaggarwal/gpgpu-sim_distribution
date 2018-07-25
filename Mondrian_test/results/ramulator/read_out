@@ -295,7 +295,7 @@ gpgpu_stall_shd_mem[l_mem_st][icnt_rc] = 0
 gpgpu_stall_shd_mem[l_mem_ld][wb_icnt_rc] = 0
 gpgpu_stall_shd_mem[l_mem_ld][wb_rsrv_fail] = 0
 gpgpu_stall_shd_mem[g_mem_ld][stream_buffer_read_stall] = 0
-gpgpu_stall_shd_mem[g_mem_ld][stream_buffer_write_stall] = 0
+gpgpu_stall_shd_mem[g_mem_st][stream_buffer_write_stall] = 0
 gpu_reg_bank_conflict_stalls = 0
 Warp Occupancy Distribution:
 Stall:0	W0_Idle:0	W0_Scoreboard:0	W1:0	W2:0	W3:0	W4:0	W5:0	W6:0	W7:0	W8:0

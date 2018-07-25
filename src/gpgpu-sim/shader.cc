@@ -464,7 +464,7 @@ void shader_core_stats::print( FILE* fout ) const
 	fprintf(fout, "gpgpu_stall_shd_mem[l_mem_ld][wb_rsrv_fail] = %d\n", gpu_stall_shd_mem_breakdown[L_MEM_ST][WB_CACHE_RSRV_FAIL]);
 
 	fprintf(fout, "gpgpu_stall_shd_mem[g_mem_ld][stream_buffer_read_stall] = %d\n", gpu_stall_shd_mem_breakdown[G_MEM_LD][STREAM_BUFFER_READ_STALL]);
-	fprintf(fout, "gpgpu_stall_shd_mem[g_mem_ld][stream_buffer_write_stall] = %d\n", gpu_stall_shd_mem_breakdown[G_MEM_ST][STREAM_BUFFER_WRITE_STALL]);
+	fprintf(fout, "gpgpu_stall_shd_mem[g_mem_st][stream_buffer_write_stall] = %d\n", gpu_stall_shd_mem_breakdown[G_MEM_ST][STREAM_BUFFER_WRITE_STALL]);
 
 	fprintf(fout, "gpu_reg_bank_conflict_stalls = %d\n", gpu_reg_bank_conflict_stalls);
 
