@@ -1579,7 +1579,7 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 						// Logging
 						printf("pc %u: ldst_prefetch_write_unit: cycle: %llu: pushed addr %llu to icnt for stream %u\n", inst.pc, gpu_tot_sim_cycle + gpu_sim_cycle, mf->get_addr(), stream_number);
 						prefetch_unit_write_time->ejection_buffer[stream_number].pop();	
-						prefetch_unit_read_time->in_flight_requests++;
+						prefetch_unit_write_time->in_flight_requests++;
 						last_write_stream_served = stream_number;
 						sent = true;
 						prefetch_unit_write_time->stream_length[stream_number]--;
@@ -1717,7 +1717,7 @@ bool ldst_unit::memory_cycle( warp_inst_t &inst, mem_stage_stall_type &stall_rea
 						// Logging
 						printf("pc %u: ldst_prefetch_write_unit: cycle: %llu: pushed addr %llu to icnt for stream %u\n", inst.pc, gpu_tot_sim_cycle + gpu_sim_cycle, mf->get_addr(), stream_number);
 						prefetch_unit_write_time->ejection_buffer[stream_number].pop();
-						prefetch_unit_read_time->in_flight_requests++;
+						prefetch_unit_write_time->in_flight_requests++;
 						last_write_stream_served = stream_number;
 						sent = true;
 						prefetch_unit_write_time->stream_length[stream_number]--;
